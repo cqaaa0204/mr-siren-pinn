@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     container:
-      image: ghcr.io/fenics/dolfinx:nightly
+      image: dolfinx/dolfinx:nightly
       options: --user root --shm-size=2g
     env:
       PYTHONPATH: /home/shared
