@@ -49,7 +49,6 @@ jobs:
 
       - name: Run dispersion validation script
         run: |
-          cd /home/shared
           echo "=== Running dispersion validation ==="
           python3 scripts/fem_dispersion_check.py
           echo "=== Dispersion validation completed ==="
