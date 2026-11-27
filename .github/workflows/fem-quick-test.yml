@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: ghcr.io/fenics/dolfinx:nightly
+      image: dolfinx/dolfinx:nightly
       options: --user root --shm-size=1g
     env:
       OMP_NUM_THREADS: 2
