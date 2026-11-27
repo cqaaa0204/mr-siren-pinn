@@ -1,0 +1,99 @@
+name: FEniCSx Plate Simulation
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulation_type:
+        description: 'Simulation type to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - quick-test      # 仅色散验证 (~30s)
+          - static-eigen    # 静力/特征值验证 (~5min)
+          - full            # 完整时域仿真 (~30min)
+  push:
+    paths:
+      - 'sim/**'
+      - 'params/physical_params.yaml'
+      - 'scripts/fem_*.py'
+      - '.github/workflows/fem-simulation.yml'
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: dolfinx/dolfinx:nightly
+      options: --user root --shm-size=2g
+    env:
+      PYTHONPATH: /home/shared
+      OMP_NUM_THREADS: 2
+      SIM_TYPE: ${{ github.event.inputs.simulation_type || 'full' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install extra Python dependencies
+        run: |
+          pip install --no-cache-dir --break-system-packages \
+            numpy scipy matplotlib pyyaml tqdm rich gmsh meshio h5py jsonschema pandas
+
+      - name: Quick test - dispersion validation only
+        if: env.SIM_TYPE == 'quick-test'
+        run: |
+          cd /home/shared
+          echo "=== Running quick dispersion validation ==="
+          python3 scripts/fem_dispersion_check.py
+          echo "=== Quick test completed ==="
+
+      - name: Static & eigen validation
+        if: env.SIM_TYPE == 'static-eigen'
+        run: |
+          cd /home/shared
+          echo "=== Running static & eigen validation ==="
+          python3 scripts/fem_static_eigen_check.py
+          echo "=== Static/eigen validation completed ==="
+
+      - name: Full transient simulation
+        if: env.SIM_TYPE == 'full'
+        run: |
+          cd /home/shared
+          echo "=== Running full Mindlin transient simulation ==="
+          python3 scripts/fem_mindlin_simulation.py
+          echo "=== Full simulation completed ==="
+
+      - name: Upload simulation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fem-simulation-output
+          path: |
+            data/raw/fem_mindlin_*.pkl
+            data/raw/fem_mindlin_*.json
+            data/raw/fem_kl_*.pkl
+            data/raw/fem_kl_*.json
+            figs/dispersion_comparison.png
+            figs/drafts/*.pdf
+            logs/
+            analysis/*.md
+          retention-days: 30
+
+      - name: Commit generated data to repository (optional)
+        if: github.event_name == 'workflow_dispatch' && env.SIM_TYPE != 'quick-test'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/raw/fem_mindlin_*.pkl data/raw/fem_mindlin_*.json data/raw/fem_kl_*.pkl data/raw/fem_kl_*.json figs/dispersion_comparison.png figs/drafts/*.pdf analysis/*.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No new artifacts to commit"
+          else
+            git commit -m "chore: add FEM simulation artifacts [skip ci]"
+            git push
+            echo "Artifacts committed and pushed"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true

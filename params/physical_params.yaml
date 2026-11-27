@@ -1,0 +1,104 @@
+physical_params:
+  material:
+    name: Aluminum 6061-T6
+    young_modulus_pa: 70000000000.0
+    poisson_ratio: 0.33
+    density_kg_m3: 2700.0
+    source: train.py defaults; typical Al 6061-T6 values
+  geometry:
+    thickness_m: 0.0002
+    plate_length_x_m: 0.02
+    plate_width_y_m: 0.01
+    dx_m: 0.0002
+    dy_m: 0.0002
+    source: train.py defaults (--dx --dy --thickness); plate size inferred from 50x100
+      grid
+  scan_region:
+    roi_x0: 0
+    roi_x1: 100
+    roi_y0: 0
+    roi_y1: 50
+    nx: 100
+    ny: 50
+    source: train.py defaults (--roi 0 100 0 50)
+  excitation:
+    type: gaussian_modulated_sine
+    center_frequency_hz: 880000.0
+    bandwidth_hz: 282000.0
+    peak_frequency_hz: 941000.0
+    amplitude_norm: 0.623
+    time_center_us: 31.426
+    sampling_rate_hz: 10000000.0
+    crop_frames:
+    - 245
+    - 330
+    source: P0-3 extraction from intact_high_snr_gt.pkl (first receiver, cropped)
+  sparsity:
+    train_ratio: 0.25
+    roi_total_points: 5000
+    train_points: 1250
+    sensor_pairs_equivalent: 25
+    source: train.py --train_ratio 0.25; equivalent sensors estimated
+  noise:
+    high_snr_gt_std: 0.25
+    low_snr_std: 0.302
+    snr_db_estimate: 13.63873330074477
+    source: Data dictionary stats (intact_high_snr_gt vs intact_low_snr std)
+  damage:
+    types:
+    - through_slot
+    - blind_hole
+    - corrosion_pit
+    size_range_mm:
+    - 1.0
+    - 5.0
+    depth_range_mm:
+    - 0.1
+    - 0.2
+    location_roi: full_scan
+    source: 'TODO: Confirm with experimental records'
+derived_params:
+  bending_rigidity_D_Nm: 0.052369730295888976
+  shear_modulus_G_Pa: 26315789473.684208
+  kappa_G_h_Nm: 4385964.912280702
+  rotary_inertia_kgm: 1.8000000000000004e-09
+  kirchhoff_love:
+    center_frequency_hz: 880000.0
+    phase_velocity_m_s: 1312.2087054361873
+    wavelength_m: 0.0014911462561774855
+    h_over_lambda: 0.1341250056266746
+    band_low:
+      frequency_hz: 800000.0
+      phase_velocity_m_s: 1251.141909915794
+      wavelength_m: 0.0015639273873947425
+      h_over_lambda: 0.12788317514738878
+    band_high:
+      frequency_hz: 1082000.0
+      phase_velocity_m_s: 1455.0409260588922
+      wavelength_m: 0.0013447698022725435
+      h_over_lambda: 0.14872433903707347
+  mindlin_reissner_approx:
+    center_frequency_hz: 880000.0
+    phase_velocity_m_s: 944.2434896755518
+    wavelength_m: 0.0010730039655403997
+    h_over_lambda: 0.18639260098099777
+    velocity_ratio_mindlin_over_kl: 0.7195833145777514
+    note: Approximate correction factor; exact solution requires solving transcendental
+      equation.
+  frequency_band_analysis:
+    kl_h_over_lambda_range:
+    - 0.12788317514738878
+    - 0.14872433903707347
+    mindlin_h_over_lambda_center: 0.18639260098099777
+    regime_kl: transition
+    regime_mindlin: transition
+    kl_velocity_deviation_at_high_freq_percent: 35.10536557668386
+  decision:
+    upgrade_physics_to_mindlin: true
+    reason: KL theory deviation > 5% at high frequency edge
+    kl_deviation_percent: 35.10536557668386
+metadata:
+  source: train.py defaults + P0-3 excitation extraction + KL/Mindlin analytical formulas
+  generated_by: scripts/compute_derived_params_v2.py
+  notes: All parameters have source annotations. Damage config needs experimental
+    confirmation.

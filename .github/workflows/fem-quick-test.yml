@@ -1,0 +1,64 @@
+name: FEniCSx Quick Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/fem-quick-test.yml'
+
+jobs:
+  quick-test:
+    name: FEniCSx Environment Quick Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: dolfinx/dolfinx:nightly
+      options: --user root --shm-size=1g
+    env:
+      OMP_NUM_THREADS: 2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install minimal dependencies
+        run: |
+          pip install --no-cache-dir --break-system-packages matplotlib pyyaml pandas
+
+      - name: Verify FEniCSx imports
+        run: |
+          python3 -c "
+          import dolfinx
+          import ufl
+          import basix
+          import ffcx
+          import mpi4py
+          import numpy as np
+          import scipy
+          import matplotlib
+          print('=== FEniCSx Environment Verification ===')
+          print(f'DOLFINx: {dolfinx.__version__}')
+          print(f'UFL: {ufl.__version__}')
+          print(f'Basix: {basix.__version__}')
+          print(f'FFCx: {ffcx.__version__}')
+          print(f'MPI size: {mpi4py.MPI.COMM_WORLD.size}')
+          print(f'NumPy: {np.__version__}')
+          print(f'SciPy: {scipy.__version__}')
+          print('✅ All core imports successful')
+          "
+
+      - name: Run dispersion validation script
+        run: |
+          cd /home/shared
+          echo "=== Running dispersion validation ==="
+          python3 scripts/fem_dispersion_check.py
+          echo "=== Dispersion validation completed ==="
+
+      - name: Upload quick test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fem-quick-test-output
+          path: |
+            figs/dispersion_comparison.png
+            logs/
+          retention-days: 7
