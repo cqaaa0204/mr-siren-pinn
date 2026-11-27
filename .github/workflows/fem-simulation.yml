@@ -9,9 +9,9 @@ on:
         default: 'full'
         type: choice
         options:
-          - quick-test      # 仅色散验证 (~30s)
-          - static-eigen    # 静力/特征值验证 (~5min)
-          - full            # 完整时域仿真 (~30min)
+          - quick-test
+          - static-eigen
+          - full
   push:
     paths:
       - 'sim/**'
@@ -45,7 +45,6 @@ jobs:
       - name: Quick test - dispersion validation only
         if: env.SIM_TYPE == 'quick-test'
         run: |
-          cd /home/shared
           echo "=== Running quick dispersion validation ==="
           python3 scripts/fem_dispersion_check.py
           echo "=== Quick test completed ==="
@@ -53,7 +52,6 @@ jobs:
       - name: Static & eigen validation
         if: env.SIM_TYPE == 'static-eigen'
         run: |
-          cd /home/shared
           echo "=== Running static & eigen validation ==="
           python3 scripts/fem_static_eigen_check.py
           echo "=== Static/eigen validation completed ==="
@@ -61,7 +59,6 @@ jobs:
       - name: Full transient simulation
         if: env.SIM_TYPE == 'full'
         run: |
-          cd /home/shared
           echo "=== Running full Mindlin transient simulation ==="
           python3 scripts/fem_mindlin_simulation.py
           echo "=== Full simulation completed ==="
